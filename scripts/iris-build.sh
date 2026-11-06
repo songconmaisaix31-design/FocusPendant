@@ -26,7 +26,9 @@ app_root="$project_root/iris-app"
 package_file="$app_root/FocusPendant-1.0.0.fuiapp"
 "$kit_root/bin/irisview" test "$app_root"
 "$kit_root/bin/irisview" build "$app_root"
-if git -C "$app_root" rev-parse --verify HEAD >/dev/null 2>&1; then
+if [[ -n ${IRIS_SOURCE_REVISION:-} ]]; then
+  "$kit_root/bin/irisview" package "$app_root" --output "$package_file" --debug-unsigned --profile diagnostic --source-revision "$IRIS_SOURCE_REVISION" --source-state dirty
+elif git -C "$app_root" rev-parse --verify HEAD >/dev/null 2>&1; then
   "$kit_root/bin/irisview" package "$app_root" --output "$package_file" --debug-unsigned --profile diagnostic
 else
   revision=$(cat "$app_root/SOURCE_REVISION")

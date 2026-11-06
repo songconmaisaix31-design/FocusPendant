@@ -1,5 +1,7 @@
 # FocusPendant · IrisView
 
+v0.4.0 新增 **远程 Agent 工作台**：在 `/remote.html` 配对手机，查看已登记的 SWA、托管 CLI 和 OpenCode 任务，按授权回答问题、继续或交接。完整部署、来源版本与操作边界见 [远程工作台说明](docs/REMOTE.md)。
+
 把电脑活动、桌面视觉和主动打卡整理成全天时间线，在 IrisView 三行 HUD 中显示当下状态，晚上回看记录并纠正标签。
 
 交付范围、完整启动顺序、验收状态与排障见 [交付说明](docs/DELIVERY.md)。
@@ -22,7 +24,7 @@ npm start
 
 ## 接入 IrisView
 
-已提供 `iris-app/FocusPendant-1.0.0.fuiapp`。项目版本 0.3.0 与 IrisView 应用清单版本分别管理。
+已提供 `iris-app/FocusPendant-1.0.0.fuiapp`。项目版本 0.4.0 与 IrisView 应用清单版本分别管理。远程任务模式的构建和环境配置见 [远程工作台说明](docs/REMOTE.md)。
 
 ```bash
 bash scripts/iris-run.sh /absolute/path/IrisView-Developer-Kit-v1.0.0
@@ -123,6 +125,7 @@ npm start
 
 | 能力 | 当前状态 |
 |---|---|
+| 远程 Agent 工作台、配对/撤销、事件同步与操作回执 | v0.4.0 新增；协议、权限与验收边界见 [远程说明](docs/REMOTE.md) |
 | 全天记录、计时、纠正、日报/七天图、导出 | 已实现；核心与真实 HTTP 测试通过 |
 | IrisView HUD、导航、录音、独立 Lite | 已实现；官方构建/包校验和公开 API 模拟测试通过 |
 | Windows 窗口采集 | 已实现；待 Windows 桌面实测 |
@@ -156,6 +159,9 @@ bash scripts/iris-build.sh /absolute/path/IrisView-Developer-Kit-v1.0.0
 | `FOCUS_DATA_DIR` | 项目 `data/` |
 | `FOCUS_TIMEZONE` | `Asia/Shanghai` |
 | `FOCUS_SERVER_URL` | HUD / 采集器连接主服务的地址 |
+| `FOCUS_REMOTE_CONFIG` | 默认 `data/remote-config.json`；远程来源和电脑管理凭据 |
+| `FOCUS_REMOTE_TASKS` | `1` 启用 IrisView 远程任务模式 |
+| `FOCUS_DEVICE_TOKEN` | 远程 IrisView / 镜像使用的配对设备令牌 |
 | `FOCUS_VISION_URL` | `http://127.0.0.1:7790` |
 | `FOCUS_SPEECH_URL` | `http://127.0.0.1:7791`，仅允许本机地址 |
 | `FOCUS_SPEECH_MODELS` | 项目 `models/speech/`，需预先准备权重 |

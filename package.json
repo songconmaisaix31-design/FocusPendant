@@ -1,5 +1,5 @@
 {
-  "name": "focuspendant", "version": "0.3.0", "private": true,
+  "name": "focuspendant", "version": "0.4.0", "private": true,
   "type": "module", "engines": {"node": ">=24"},
-  "scripts": {"start": "node core/server.mjs", "test": "node --test test/*.test.mjs", "demo": "node scripts/demo.mjs"}
+  "scripts": {"start": "node core/server.mjs", "test": "node --test test/*.test.mjs", "demo": "node scripts/demo.mjs", "remote": "node scripts/remote.mjs"}
 }

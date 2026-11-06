@@ -7,5 +7,10 @@ __pycache__/
 *.pyc
 node_modules/
 models/
+remote-config*.json
+remote-mirror*.json
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
 iris-app/dist/
 /IrisView-Developer-Kit*/

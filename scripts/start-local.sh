@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
+if [[ -z ${FOCUS_TOKEN:-} ]]; then
+  FOCUS_TOKEN=$(node scripts/owner-token.mjs)
+  if [[ -n "$FOCUS_TOKEN" ]]; then export FOCUS_TOKEN; else unset FOCUS_TOKEN; fi
+fi
 children=()
 cleanup() {
   trap - INT TERM EXIT

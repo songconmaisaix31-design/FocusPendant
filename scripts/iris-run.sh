@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 project_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+if [[ -z ${FOCUS_TOKEN:-} && -z ${FOCUS_DEVICE_TOKEN:-} ]]; then
+  FOCUS_TOKEN=$(node "$project_root/scripts/owner-token.mjs")
+  if [[ -n "$FOCUS_TOKEN" ]]; then export FOCUS_TOKEN; else unset FOCUS_TOKEN; fi
+fi
 kit_root=${1:-${IRISVIEW_KIT:-}}
 if [[ -z "$kit_root" || ! -x "$kit_root/bin/irisview" ]]; then
   echo 'Usage: bash scripts/iris-run.sh /absolute/path/IrisView-Developer-Kit-v1.0.0' >&2

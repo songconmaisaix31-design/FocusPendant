@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#153f31">
+  <title>FocusPendant · 远程任务</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/remote.css">
+  <script src="/remote.js" defer></script>
+</head>
+<body>
+  <div class="app-shell remote-shell">
+    <header class="topbar">
+      <a class="brand-lockup" href="/" aria-label="FocusPendant 首页"><span class="brand-mark" aria-hidden="true">f<span>·</span></span><span>FocusPendant<small>YOUR WORK, WITHIN REACH.</small></span></a>
+      <div class="top-actions"><a class="home-link" href="/">注意力日记</a><span class="status-pill" id="remote-connection" role="status"><i class="dot"></i><span>等待配对</span></span></div>
+    </header>
+    <section class="hero">
+      <div class="hero-copy"><p class="eyebrow">STAY CLOSE TO YOUR WORK</p><h1 class="page-title">离开电脑，<br>任务仍有回音。</h1><p>查看真实进展，回答待处理的问题，让原任务继续。</p></div>
+      <div class="remote-device"><span class="panel-kicker">任务电脑</span><strong id="remote-device-name">尚未连接</strong><span id="remote-last-update" class="muted">配对后接收状态</span></div>
+    </section>
+    <div id="remote-banner" class="connection-banner" role="status" aria-live="polite" hidden></div>
+    <section class="panel pairing-panel" id="pairing-panel" aria-labelledby="pairing-title">
+      <div class="panel-head"><div><p class="panel-kicker">CONNECT YOUR DEVICE</p><h2 class="panel-title" id="pairing-title">配对查看设备</h2></div><span class="badge">一次性配对码</span></div>
+      <p class="muted">在任务电脑创建配对码，在这里输入。获得的访问权限仅用于这台查看设备。</p>
+      <form id="pairing-form" class="pairing-form">
+        <label class="field">配对码<input id="pair-code" name="code" type="text" maxlength="256" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="输入任务电脑显示的配对码" required></label>
+        <label class="field">查看设备名称<input id="pair-label" name="label" type="text" maxlength="80" value="我的查看设备" autocomplete="off" required></label>
+        <button type="submit" class="button button-primary" id="pair-submit">配对并连接</button>
+      </form>
+      <details class="owner-access"><summary>使用已有访问令牌</summary><form id="token-form" class="token-form"><label class="field">访问令牌<input id="remote-token" type="password" maxlength="1024" autocomplete="off" placeholder="设备令牌或任务电脑的管理令牌" required></label><button type="submit" class="button button-secondary">连接</button></form><p class="footnote">令牌只保存在当前浏览器会话。新设备优先使用配对码。</p></details>
+      <p class="form-message" id="pairing-message" aria-live="polite"></p>
+    </section>
+    <main class="remote-layout">
+      <section class="task-workspace" aria-labelledby="tasks-title">
+        <div class="section-head"><div><p class="panel-kicker">TASKS IN PROGRESS</p><h2 id="tasks-title">任务</h2></div><div class="button-row"><span id="remote-permissions" class="badge">未连接</span><button type="button" class="button button-quiet" id="remote-refresh" disabled>刷新</button><button type="button" class="button button-quiet" id="remote-disconnect" hidden>断开</button></div></div>
+        <div class="remote-summary" id="remote-summary" hidden><span><strong id="total-tasks">0</strong> 个任务</span><span><strong id="waiting-tasks">0</strong> 个待回答</span><span><strong id="stale-tasks">0</strong> 个状态过期</span></div>
+        <div id="task-list" class="task-list"><div class="empty-state"><span class="empty-icon" aria-hidden="true">◌</span><h3>等待任务电脑连接</h3><p>配对后，这里会显示已登记任务的运行状态与待回答问题。</p></div></div>
+      </section>
+      <aside class="remote-sidebar">
+        <section class="panel" aria-labelledby="receipts-title"><div class="panel-head"><div><p class="panel-kicker">YOUR ACTIONS</p><h2 class="panel-title" id="receipts-title">操作回执</h2></div></div><p class="muted">保存、读取与继续执行会分别显示。</p><div id="command-list" class="command-list"><p class="empty-copy">尚未发送操作。</p></div></section>
+        <section class="panel" aria-labelledby="events-title"><div class="panel-head"><div><p class="panel-kicker">LATEST SIGNALS</p><h2 class="panel-title" id="events-title">任务事件</h2></div><span class="badge" id="event-count">0</span></div><p class="footnote" id="event-note">连接后接收新事件，重新连接时按游标补传。</p><ol id="event-list" class="event-list"><li class="empty-copy">尚未收到事件。</li></ol></section>
+      </aside>
+    </main>
+    <footer><span>FocusPendant · 远程任务</span><span>连接状态与任务进度分别记录。</span></footer>
+  </div>
+  <div id="remote-toast" class="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>

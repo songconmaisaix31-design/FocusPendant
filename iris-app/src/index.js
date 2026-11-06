@@ -8,9 +8,11 @@ const { Board, Color, Font, FusionRoot, Text, TextAlign } = require("@irisview/o
 const { applicationDataDirectory } = require("./application-data");
 const { LocalLite } = require("./local-lite");
 const { parseWave } = require("./speech-playback");
+const { RemoteTasks } = require("./remote-tasks");
 
 const base = (process.env.FOCUS_SERVER_URL || "http://127.0.0.1:7788").replace(/\/$/, "");
-const token = process.env.FOCUS_TOKEN || "";
+const remoteMode = process.env.FOCUS_REMOTE_TASKS === "1";
+const token = remoteMode ? process.env.FOCUS_DEVICE_TOKEN || process.env.FOCUS_TOKEN || "" : process.env.FOCUS_TOKEN || "";
 const state = { alive: false, foreground: true, online: false, snapshot: null, message: "连接注意力服务…", messageUntil: Infinity, voice: null, local: null, localMode: false };
 const retained = {};
 let polling = false;
@@ -31,6 +33,7 @@ function notice(message, milliseconds = 4000) {
 }
 
 async function api(route, body) {
+  if (remoteMode && !route.startsWith("/api/remote/")) throw new Error("远程设备仅访问任务接口");
   const headers = { "Content-Type": "application/json" };
   if (token) headers.Authorization = `Bearer ${token}`;
   const response = await fetch(`${base}${route}`, {
@@ -38,7 +41,7 @@ async function api(route, body) {
     body: body === undefined ? undefined : JSON.stringify(body),
     signal: AbortSignal.timeout(2500)
   });
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  if (!response.ok) { const error = new Error(`HTTP ${response.status}`); error.status = response.status; throw error; }
   return response.json();
 }
 
@@ -46,6 +49,14 @@ async function poll() {
   if (polling || !state.alive) return;
   polling = true;
   try {
+    if (remoteMode) {
+      await state.remote.refresh();
+      if (!state.alive) return;
+      state.online = state.remote.online;
+      if (state.messageUntil === Infinity) state.messageUntil = 0;
+      render();
+      return;
+    }
     const snapshot = await api("/api/state");
     if (!state.alive) return;
     state.online = true;
@@ -56,6 +67,7 @@ async function poll() {
     render();
   } catch {
     state.online = false;
+    if (remoteMode) { state.messageUntil = 0; render(); return; }
     if (!state.snapshot || ["idle", "finished"].includes(state.snapshot.phase)) state.localMode = true;
     if (!state.localMode) notice("服务断开 · 会话等待重连", 2500);
     else if (state.messageUntil === Infinity) state.messageUntil = 0;
@@ -63,6 +75,7 @@ async function poll() {
 }
 
 function act(action, extra = {}) {
+  if (remoteMode) return;
   actionChain = actionChain.then(async () => {
     if (!state.alive) return;
     if (state.localMode) {
@@ -82,6 +95,15 @@ function act(action, extra = {}) {
 
 function render() {
   if (!retained.text) return;
+  if (remoteMode) {
+    const lines = state.remote.hudLines();
+    // Connection age and last confirmation remain visible even while showing
+    // a command receipt or help. The task itself is never optimistically changed.
+    if (state.messageUntil !== Infinity && Date.now() < state.messageUntil) lines[1] = state.message;
+    const text = lines.map(line => Array.from(String(line).replace(/[\r\n]/g, " ")).slice(0, 22).join("")).join("\n");
+    if (text !== retained.lastText) { retained.text.setText(text); retained.lastText = text; }
+    return;
+  }
   const snapshot = state.localMode ? state.local.snapshot() : state.snapshot;
   const lines = snapshot && Array.isArray(snapshot.hudLines)
     ? snapshot.hudLines.slice(0, 3)
@@ -101,6 +123,13 @@ function render() {
 }
 
 function handleNavigation(action) {
+  if (remoteMode) {
+    const message = state.remote.navigation(action);
+    if (message) notice(message);
+    else state.messageUntil = 0;
+    render();
+    return;
+  }
   const snapshot = (state.localMode ? state.local.snapshot() : state.snapshot) || {};
   const phase = snapshot.phase || "idle";
   if (action === "right") { toggleVoice(); return; }
@@ -139,6 +168,7 @@ function monitorSpeech() {
 }
 
 async function requestSpeech() {
+  if (remoteMode) { notice("远程任务语音尚未接入"); return; }
   notice("本地生成复盘语音…", 185000);
   try {
     const headers = { "Content-Type": "application/json" };
@@ -151,6 +181,7 @@ async function requestSpeech() {
 }
 
 async function receiveSpeech(speech) {
+  if (remoteMode) return;
   if (!state.foreground || state.voice || speechBusy || !speech || speech.target !== "iris" || speech.status !== "ready" || !speech.id || speech.id === lastSpeechId) return;
   // Never replay a saved report merely because the application restarted.
   if (!Number.isFinite(speech.createdAt) || Date.now() - speech.createdAt > 120000 || Date.now() < speech.createdAt - 5000) return;
@@ -180,6 +211,7 @@ async function receiveSpeech(speech) {
 }
 
 function toggleVoice() {
+  if (remoteMode) { notice("远程任务语音尚未接入"); return; }
   if (state.voice) { state.voice.session.finish(); return; }
   stopSpeech();
   try {
@@ -265,18 +297,30 @@ function drainVoice() {
   }
 }
 
+function handleRemoteText(text) {
+  const value = String(text || "").trim();
+  const match = /^\/answer(?:\s+([\s\S]+))?$/.exec(value);
+  if (!match) { notice("仅 /answer 内容 · 其他用手机"); return; }
+  state.remote.answer(match[1] || "").then(message => {
+    if (state.alive) { notice(message); poll(); }
+  }).catch(error => { if (state.alive) notice(error.message); });
+}
+
 function frame(timestamp) {
   if (!state.alive) return;
   try {
-    if (state.local) state.local.tick(timestamp);
-    drainVoice();
-    monitorSpeech();
+    if (!remoteMode) {
+      if (state.local) state.local.tick(timestamp);
+      drainVoice();
+      monitorSpeech();
+    }
     if (state.foreground) {
       let action;
       while ((action = input.takeNavigationAction()) !== null) handleNavigation(action);
       let submission;
       while ((submission = input.takeTextInput()) !== null) {
-        if (submission.text.trim() === "/read") requestSpeech();
+        if (remoteMode) handleRemoteText(submission.text);
+        else if (submission.text.trim() === "/read") requestSpeech();
         else if (submission.text.trim() === "/stop") { stopSpeech(); notice("已请求停止朗读"); }
         else act("checkin", { text: submission.text, source: "iris-text" });
       }
@@ -297,9 +341,13 @@ function start() {
   if (state.alive) return;
   state.alive = true;
   retained.dataDirectory = applicationDataDirectory();
-  try { lastSpeechId = JSON.parse(fs.readFileSync(path.join(retained.dataDirectory, "last-speech.json"), "utf8")).id || ""; } catch {}
-  state.local = new LocalLite(retained.dataDirectory);
-  state.localMode = state.local.data.active;
+  if (remoteMode) {
+    state.remote = new RemoteTasks({ directory: retained.dataDirectory, request: api });
+  } else {
+    try { lastSpeechId = JSON.parse(fs.readFileSync(path.join(retained.dataDirectory, "last-speech.json"), "utf8")).id || ""; } catch {}
+    state.local = new LocalLite(retained.dataDirectory);
+    state.localMode = state.local.data.active;
+  }
   const property = os.WindowProperty.create();
   property.setTitle("FocusPendant");
   property.setSize([0.64, 0.48, 0.01]);
@@ -338,8 +386,10 @@ os.App.createApp(lifecycle => {
     clearInterval(retained.pollTimer);
     os.cancelAnimationFrame(retained.frameId);
     os.setDisplayKeepAwake(false);
-    stopSpeech();
-    try { os.releaseRemoteMedia(); } catch {}
+    if (!remoteMode) {
+      stopSpeech();
+      try { os.releaseRemoteMedia(); } catch {}
+    }
     if (state.voice) { state.voice.session.cancel(); closeVoice(state.voice, false); state.voice = null; }
     retained.text = undefined; retained.board = undefined;
     retained.root = undefined; retained.window = undefined;

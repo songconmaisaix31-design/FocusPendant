@@ -1,13 +1,17 @@
-# FocusPendant v0.3.0 交付说明
+# FocusPendant v0.4.0 交付说明
 
 交付日期：2026-11-07（北京时间）。目标环境：Ubuntu 24.04 x86_64／Windows + WSLg、电脑内置摄像头、本地中文语音模型。
+
+v0.4.0 新增远程 Agent 工作台 `/remote.html`，原注意力、摄像头与语音能力继续保留。远程部署按 [REMOTE.md](REMOTE.md) 执行；本页保留原功能的安装和实机验收说明。
 
 ## 交付范围
 
 | 路径 | 用途 |
 |---|---|
 | `core/` | 全天记录、25/5 计时、来源融合、修正、复盘、导出及本地服务接口 |
+| `core/remote/` | 本机任务桥接、SQLite 事件与命令回执、SWA／托管 CLI／OpenCode 适配、只读镜像 |
 | `web/` | 电脑控制台、时间线、摄像头取景与裁剪、录音、转写和朗读 |
+| `web/remote.*`、`scripts/remote.mjs` | 手机工作台、设备配对与撤销、本机配置和显式启动命令 |
 | `iris-app/src/` | IrisView 三行 HUD、导航、录音、独立 Lite 和本地 TTS 播放 |
 | `iris-app/FocusPendant-1.0.0.fuiapp` | 已构建的 IrisView 应用；应用清单版本与项目版本分别管理 |
 | `collectors/` | Windows／Linux X11 窗口采集、本地 CLIP 视觉服务和可选云端视觉接口 |
@@ -59,6 +63,8 @@ python3 -m venv .venv-vision
 bash scripts/start-local.sh
 ```
 
+若已执行 `npm run remote -- init`，本地启动脚本从远程配置加载电脑令牌，原网页需输入该令牌；单独启动采集器时也需设置相同 `FOCUS_TOKEN`。手机远程工作台使用配对码和设备令牌，具体见 [远程部署](REMOTE.md)。
+
 **5. 另开终端启动 IrisView。** 将路径替换为已完成 24.04 补丁的 Kit 目录；模拟器终端按 Ctrl+C 停止。
 
 ```bash
@@ -76,8 +82,11 @@ Flow 在 Windows PowerShell 中运行 `powershell -ExecutionPolicy Bypass -File 
 - `data/state.json` 保存历史，`data/voice/` 保存录音，`data/speech/` 保存生成音频。备份前停止服务并复制整个 `data/`；这些文件不提交 Git。
 - 摄像头关闭后停止采样；服务重启后默认关闭摄像头，进行中的计时恢复为暂停。来源过期后自动降低有效模式。
 - 手动纠正保留原始证据。窗口、视觉、自报和计时各保留来源；未观测时间不推断为分心。
+- 远程配置、设备授权、事件与交接卡也保存在 `data/`，不提交 Git；初始化默认配对仅有 `read`。远程控制的本机 CLI 仍使用各自模型和账户，不能据此宣称所有 Agent 推理都在本地。
 
 ## 验收状态
+
+v0.4.0 本次 Node 全套 103 项通过，其中原功能 25 项、新增远程与 HUD 78 项；视觉与本地语音组件 14 项通过。新增远程功能的执行命令与现场边界见 [REMOTE.md 验证章节](REMOTE.md#7-验证与目标设备验收)。
 
 | 项目 | 已验证 | 仍需目标电脑验证 |
 |---|---|---|
@@ -86,6 +95,7 @@ Flow 在 Windows PowerShell 中运行 `powershell -ExecutionPolicy Bypass -File 
 | 本地语音 | 6 项测试；真实 Piper→主服务→Whisper→唯一打卡闭环通过 | 真实麦克风、口音与现场噪声下的识别效果 |
 | IrisView | 构建、打包、校验、公开 API 模拟与独立 Lite 测试通过 | 真实模拟器画面、导航、麦克风和扬声器 |
 | 网页 | 真实核心服务联调通过；390px 无横向溢出、零页面错误 | Windows 浏览器与 WSL localhost 转发 |
+| 远程工作台 | 78 项新增测试；真实 HTTP、SQLite、Git 工作区及子进程；Chromium 与实际服务联调及 CLI 配对撤销通过 | 真 SWA/Pi、OpenCode、各 CLI、手机私有网络与眼镜远程模式 |
 
 真实语音闭环使用合成中文样本，本次约 7.081 秒；不能据此承诺现场延迟或麦克风准确率。IrisView 的 preflight 与 dry-run 通过不等于真实窗口已渲染。详细证据见 [verification.md](verification.md)，逐项实机流程见 [acceptance.md](acceptance.md)。
 
@@ -104,4 +114,4 @@ Flow 在 Windows PowerShell 中运行 `powershell -ExecutionPolicy Bypass -File 
 
 ## 后续待办
 
-优先完成上述真实设备验收与视觉样本测试，再决定是否扩展场景分类。浏览器标签、IDE 文件、git 项目感知、手机 HTTPS 推流尚未接入；实际认知注意力测量及准确率保证不在本次交付范围内。
+优先完成上述真实设备验收与视觉样本测试，再决定是否扩展场景分类。注意力采集中的浏览器标签、IDE 文件、git 项目感知、手机摄像头 HTTPS 推流尚未接入；远程 Agent 交接的 Git 检查点不属于注意力采集。实际认知注意力测量及准确率保证不在本次交付范围内。Tailscale Serve 提供的是用户自行部署步骤，本次不声明已部署或已连通手机。

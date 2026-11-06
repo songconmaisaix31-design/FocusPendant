@@ -4,6 +4,7 @@ import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {randomUUID,timingSafeEqual} from 'node:crypto';
 import {AttentionEngine,dateKey} from './engine.mjs';
+import {RemoteController,loadRemoteConfig} from './remote/controller.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.wav':'audio/wav','.webm':'audio/webm'};
@@ -19,9 +20,14 @@ function markdown(s){return `# FocusPendant · ${s.date}\n\n${s.report.summary.j
 export function createService(options={}) {
   const dataDir=path.resolve(options.dataDir||process.env.FOCUS_DATA_DIR||path.join(ROOT,'data'));
   const host=options.host||process.env.FOCUS_HOST||'127.0.0.1';
-  const token=options.token??process.env.FOCUS_TOKEN??'';
+  const remoteConfig=options.remoteConfig||loadRemoteConfig(process.env.FOCUS_REMOTE_CONFIG||path.join(dataDir,'remote-config.json'));
+  const token=options.token??process.env.FOCUS_TOKEN??remoteConfig.ownerToken??'';
+  if(remoteConfig.targets?.length&&token.length<16)throw new Error('远程任务配置需要至少 16 位电脑主凭据；运行 npm run remote -- init');
   if(!['127.0.0.1','localhost','::1'].includes(host)&&token.length<16)throw new Error('对外监听需设置至少 16 位 FOCUS_TOKEN');
   fs.mkdirSync(dataDir,{recursive:true,mode:0o700});
+  const remote=new RemoteController({dataDir,ownerToken:token,config:remoteConfig,...options.remoteOptions});
+  let remoteClosed;
+  const remoteReady=remote.start();
   const stateFile=path.join(dataDir,'state.json');let saved=null;
   if(fs.existsSync(stateFile)){try{saved=JSON.parse(fs.readFileSync(stateFile,'utf8'));}catch{throw new Error(`数据文件无法解析，请先备份并修复：${stateFile}`);}}
   const engine=new AttentionEngine({saved,timezone:process.env.FOCUS_TIMEZONE||'Asia/Shanghai',...options.engineOptions});
@@ -72,11 +78,29 @@ export function createService(options={}) {
     try {
       const url=new URL(req.url,'http://localhost'); const route=url.pathname;
       const isApi=route.startsWith('/api/')||route==='/events'||route.startsWith('/voice/')||route.startsWith('/speech/');
-      if(isApi&&!auth(req,token))throw httpError('请输入连接令牌',401);
       if(isApi&&req.headers.origin){let origin;try{origin=new URL(req.headers.origin);}catch{throw httpError('无效来源',403);}if(origin.host!==req.headers.host)throw httpError('仅允许同源控制页面',403);}
+      if(route.startsWith('/api/remote/')){
+        if(req.method==='POST'&&route==='/api/remote/pair')return reply(res,201,remote.pair(await json(req),req.socket.remoteAddress));
+        const client=remote.authenticate(req.headers.authorization);
+        if(req.method==='GET'&&route==='/api/remote/snapshot')return reply(res,200,remote.snapshot(client));
+        if(req.method==='GET'&&route==='/api/remote/events')return reply(res,200,remote.events(client,{after:Number(url.searchParams.get('after')||0),epoch:url.searchParams.get('epoch')??undefined,limit:Number(url.searchParams.get('limit')||200)}));
+        if(req.method==='POST'&&route==='/api/remote/commands')return reply(res,202,await remote.submit(client,await json(req)));
+        const commandMatch=route.match(/^\/api\/remote\/commands\/([a-f0-9-]+)(\/reconcile)?$/i);
+        if(commandMatch&&req.method==='GET'&&!commandMatch[2])return reply(res,200,remote.commandFor(client,commandMatch[1]));
+        if(commandMatch&&req.method==='POST'&&commandMatch[2])return reply(res,200,await remote.reconcile(client,commandMatch[1]));
+        if(route.startsWith('/api/remote/admin/')){
+          remote.owner(client);
+          if(req.method==='POST'&&route==='/api/remote/admin/pairings')return reply(res,201,remote.store.createPairing(await json(req)));
+          if(req.method==='GET'&&route==='/api/remote/admin/devices')return reply(res,200,{devices:remote.store.listDevices()});
+          if(req.method==='POST'&&route==='/api/remote/admin/revoke')return reply(res,200,remote.store.revokeDevice((await json(req)).deviceId));
+          if(req.method==='POST'&&route==='/api/remote/admin/start')return reply(res,200,await remote.startTarget(client,(await json(req)).taskId));
+        }
+        throw httpError('远程接口不存在',404);
+      }
+      if(isApi&&!auth(req,token))throw httpError('请输入连接令牌',401);
       engine.advance();
       const date=url.searchParams.get('date')||dateKey(Date.now(),engine.timezone);if(!/^\d{4}-\d{2}-\d{2}$/.test(date))throw httpError('日期格式应为 YYYY-MM-DD');
-      if(req.method==='GET'&&route==='/api/health')return reply(res,200,{ok:true,version:'0.3.0',now:Date.now()});
+      if(req.method==='GET'&&route==='/api/health')return reply(res,200,{ok:true,version:'0.4.0',now:Date.now()});
       if(req.method==='GET'&&route==='/api/state')return reply(res,200,state(date));
       if(req.method==='GET'&&route==='/api/export')return reply(res,200,engine.snapshot(Date.now(),date),{'Content-Disposition':`attachment; filename="focuspendant-${date}.json"`});
       if(req.method==='GET'&&route==='/api/report')return reply(res,200,markdown(engine.snapshot(Date.now(),date)),{'Content-Type':'text/markdown; charset=utf-8','Content-Disposition':`attachment; filename="focuspendant-${date}.md"`});
@@ -180,11 +204,11 @@ export function createService(options={}) {
     }catch(e){reply(res,e.status||400,{error:e.message});}
   });
   const tick=setInterval(()=>engine.advance(),1000);const save=setInterval(persist,5000);tick.unref();save.unref();
-  const shutdown=()=>{if(closed)return;closed=true;for(const c of speechControllers)c.abort();clearInterval(tick);clearInterval(save);engine.advance();persist();};
+  const shutdown=()=>{if(closed)return;closed=true;remoteClosed=remote.close();for(const c of speechControllers)c.abort();clearInterval(tick);clearInterval(save);engine.advance();persist();};
   const closeServer=server.close.bind(server);
-  server.close=(callback)=>{shutdown();return closeServer(callback);};
+  server.close=(callback)=>{shutdown();return closeServer(err=>Promise.resolve(remoteClosed).then(()=>callback?.(err),cause=>callback?.(cause)));};
   server.on('close',shutdown);
-  return {server,engine,persist,host,dataDir};
+  return {server,engine,persist,host,dataDir,remote,remoteReady};
 }
 
 if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href){

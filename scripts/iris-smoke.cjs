@@ -48,6 +48,7 @@ const context = {
     if (name === "./application-data") return { applicationDataDirectory: () => directory };
     if (name === "./local-lite") return require(path.join(project, "iris-app/src/local-lite"));
     if (name === "./speech-playback") return require(path.join(project, "iris-app/src/speech-playback"));
+    if (name === "./remote-tasks") return require(path.join(project, "iris-app/src/remote-tasks"));
     return require(name);
   },
   process: { env: {} }, console, Buffer, AbortSignal, setInterval: () => 1, clearInterval() {},
