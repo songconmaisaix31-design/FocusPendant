@@ -18,6 +18,10 @@
 | 网页补充交互 | 通过 | 本地协议服务验证多题/多选、label/value、once审批、复杂表单禁答、XSS纯文本、撤销和390px布局 |
 | CLI 实际流程 | 通过 | init、add-managed 不自动启动、配置令牌读取、项目配对、设备撤销 |
 | 原功能回归 | 通过 | 原 HUD 与 Lite；视觉8项、本地语音6项（含真实PyAV解码，无跳过） |
+| Kit test/build/package/verify | 通过 | 远程 HUD 已打入 26,735 字节 `.fuiapp`；5 个 JavaScript 文件检查，Linux/Android diagnostic 包校验通过 |
+| GitHub Actions | 通过 | [源代码提交 1850127 的 CI](https://github.com/songconmaisaix31-design/FocusPendant/actions/runs/42282202479)，Ubuntu 24.04、Node 24、Python 3.12 |
+
+新包来源提交为 `18501273f2476b92c2af6d9e32685616cc66f31e`，保留 Kit diagnostic/debug-unsigned 信任模式。SHA256：`b8489b78fd10650e236316247b22db5249c97bdec1687aabe0e39c7faf364a27`。源码与安装包版本仍分别为 0.4.0 和 IrisView 清单 1.0.0。
 
 协议服务和子进程 fixture 没有调用真实模型。断网 2 分钟场景通过可控时钟推进和真实连接中断验证，未声称做过两台物理设备/公网链路实验。Tailscale 尚未部署，真实 SWA/Pi、OpenCode/四家 CLI 登录与模型调用、手机与眼镜仍需按 REMOTE.md 验收。
 
