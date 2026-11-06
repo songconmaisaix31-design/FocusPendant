@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "space.davidwang.focuspendant",
+  "version": "1.0.0",
+  "versionCode": 1,
+  "displayName": { "en": "FocusPendant", "zh-CN": "FocusPendant 注意力日记" },
+  "role": "ordinary",
+  "controlProfile": "generic",
+  "capabilities": ["display.keep-awake", "input.audio", "input.navigation", "input.text", "media.playback"],
+  "minimumHostVersion": 2
+}

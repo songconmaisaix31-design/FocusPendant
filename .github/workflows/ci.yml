@@ -1,0 +1,32 @@
+name: Core and local interfaces
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install lightweight test dependencies
+        run: python -m pip install 'Pillow>=10,<14' 'av>=14,<17' 'numpy>=2,<3'
+      - name: Core and API tests
+        run: npm test
+      - name: IrisView public API and standalone Lite
+        run: |
+          node scripts/iris-smoke.cjs
+          node scripts/iris-lite-test.cjs
+      - name: Vision and local speech interfaces
+        run: |
+          python -m unittest discover -s collectors/tests -v
+          python -m unittest discover -s speech/tests -v

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#153f31">
+  <title>FocusPendant · 看见一天的注意力</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand-lockup" href="/" aria-label="FocusPendant 首页"><span class="brand-mark" aria-hidden="true">f<span>·</span></span><span>FocusPendant<small>YOUR ATTENTION, UNDERSTOOD.</small></span></a>
+      <div class="top-actions"><span class="status-pill" id="connection-status"><i class="dot"></i><span>正在连接</span></span><label class="date-field"><span class="visually-hidden">选择日期</span><input type="date" id="day-picker"></label></div>
+    </header>
+    <div class="connection-banner" id="connection-banner" hidden>还未连接本地服务。启动 FocusPendant 后，此页会自动重新连接。</div>
+    <div class="demo-banner" id="demo-banner" hidden>演示数据 · 独立数据目录，未采集真实活动</div>
+    <section class="hero">
+      <div class="hero-copy"><p class="eyebrow">A LITTLE MORE AWARE, EVERY DAY.</p><h1 class="page-title">让一天的注意力，<br>慢慢清晰起来。</h1><p>把电脑活动、桌面场景和你的记录，整理成可以回看的时间线。</p></div>
+      <div class="hero-mode"><p class="panel-kicker">感知模式</p><div class="segmented" role="group" aria-label="选择感知模式"><button type="button" data-mode="lite">Lite</button><button type="button" data-mode="flow">Flow</button><button type="button" data-mode="vision">Vision</button></div><p class="muted" id="mode-description">Lite · 计时与主动记录</p></div>
+    </section>
+    <main class="main-grid">
+      <div class="workspace">
+        <section class="panel overview-panel" aria-labelledby="overview-title">
+          <div class="panel-head"><div><p class="panel-kicker" id="date-caption">今日概览</p><h2 class="panel-title" id="overview-title">注意力，留下了哪些足迹</h2></div><span class="badge" id="current-label">等待记录</span></div>
+          <div class="metrics"><div class="metric"><strong class="metric-value" id="observed-stat">0<span>分钟</span></strong><span class="metric-label">有证据的活动时间</span></div><div class="metric"><strong class="metric-value" id="focus-stat">0<span>分钟</span></strong><span class="metric-label">专注计时</span></div><div class="metric"><strong class="metric-value" id="switches-stat">0<span>次</span></strong><span class="metric-label">窗口切换</span></div><div class="metric"><strong class="metric-value" id="checkins-stat">0<span>次</span></strong><span class="metric-label">主动打卡</span></div></div>
+          <div class="time-ribbon" id="day-ribbon" role="img" aria-label="全天活动分布"><div class="blank-chart">尚无活动记录</div></div><div class="timeline-ruler"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span></div>
+          <p class="footnote">空白代表尚未观测；场景识别是活动线索，不能直接测量你的注意力。</p><div class="insights-list" id="insights-list" hidden></div>
+        </section>
+        <section class="panel" aria-labelledby="timeline-title">
+          <div class="panel-head"><div><p class="panel-kicker">YOUR DAY, IN CONTEXT</p><h2 class="panel-title" id="timeline-title">一天的时间线</h2></div><span class="muted" id="segment-count">0 个片段</span></div>
+          <div class="timeline-list" id="timeline-list"><div class="empty-state"><span class="empty-icon" aria-hidden="true">◌</span><h3>从第一条记录开始</h3><p>开启电脑采集、连接摄像头，或手动记下此刻正在做的事。</p></div></div>
+          <form class="manual-controls" id="manual-form"><label for="manual-scene">此刻在做</label><select id="manual-scene"><option value="reading">阅读</option><option value="writing">书写</option><option value="screen_work">电脑工作</option><option value="meeting">会议</option><option value="eating">用餐</option><option value="exercise">运动</option><option value="away">离开桌面</option><option value="other">其他活动</option></select><button class="button button-secondary" type="submit">记一笔</button><span class="footnote">标记为本人记录</span></form><details class="daily-notes"><summary>打卡记录 · 文字与语音</summary><div id="notes-list" class="notes-list"><p class="muted">今天还没有打卡。</p></div></details>
+        </section>
+        <section class="panel" aria-labelledby="review-title">
+          <div class="panel-head"><div><p class="panel-kicker">MAKE ROOM FOR REFLECTION</p><h2 class="panel-title" id="review-title">今日复盘</h2></div><span class="badge" id="report-source">本地整理</span></div>
+          <ol class="review-list" id="review-list"><li>今天的记录会在这里逐渐汇成复盘。</li></ol><p class="review-suggestion" id="review-suggestion">先积累真实记录，再回看自己的节奏。</p>
+          <div class="speech-controls"><label for="speech-target">朗读到</label><select id="speech-target"><option value="browser">电脑</option><option value="iris">眼镜</option></select><button class="button button-secondary" id="read-report" type="button">本地朗读复盘</button></div><p class="footnote" id="speech-message" aria-live="polite">使用电脑上的语音模型生成，内容不出网。</p><audio class="voice-playback" id="report-audio" controls hidden aria-label="本地生成的复盘朗读"></audio><div class="cloud-review" id="cloud-review" hidden><span class="badge">云端复盘 · 活动摘要生成</span><p id="cloud-review-text"></p></div><button class="button button-quiet" type="button" id="cloud-report">云端复盘（发送活动摘要）</button><p class="footnote" id="cloud-report-status">需在本地配置模型服务；发送统计与活动片段，不发送原始画面。</p><div class="export-links"><a id="export-markdown" href="/api/report">下载复盘 Markdown ↗</a><a id="export-json" href="/api/export">导出原始记录 JSON ↗</a></div>
+        </section>
+        <section class="panel" aria-labelledby="weekly-title"><div class="panel-head"><div><p class="panel-kicker">SMALL STEPS ADD UP</p><h2 class="panel-title" id="weekly-title">最近七天</h2></div><span class="muted">有证据的活动时间</span></div><div class="weekly-bars" id="weekly-bars"><div class="empty-state">积累几天记录后，你会看见自己的节奏。</div></div></section>
+      </div>
+      <aside class="sidebar">
+        <section class="hud-panel" aria-labelledby="hud-title"><div class="hud-top"><span id="hud-title">IRISVIEW · HUD</span><span class="hud-status" id="hud-mode">LITE</span></div><div class="hud-lines" id="hud-lines"><p>FocusPendant</p><p>一天，从这一刻开始</p><p>等待连接</p></div><div class="hud-footer"><span>640 × 480 · 三行显示</span><span>眼镜界面预览</span></div></section>
+        <section class="panel timer-panel" aria-labelledby="timer-title"><div class="panel-head"><div><p class="panel-kicker">ONE THING AT A TIME</p><h2 class="panel-title" id="timer-title">留一段专注时间</h2></div><span class="badge" id="timer-phase">准备开始</span></div><div class="timer-display" id="timer-display">25<span>:</span>00</div><p class="timer-label" id="timer-description">25 分钟专注 · 5 分钟休息</p><div class="button-row"><button type="button" class="button button-primary" id="timer-toggle">开始专注</button><button type="button" class="button button-quiet" id="timer-finish" disabled>结束</button></div><button class="button button-quiet distraction-button" type="button" id="distraction">↗ 我刚刚分心了 <span id="distraction-count">0 次</span></button><form class="checkin-form" id="checkin-form"><label class="field" for="checkin-note">给此刻留一句话</label><div class="input-row"><input class="note-input" id="checkin-note" type="text" maxlength="300" placeholder="正在读一篇很有意思的论文…"><button class="button button-secondary" type="submit">打卡</button></div></form><div class="mic-controls"><button class="button button-secondary" type="button" id="mic-toggle">语音打卡</button><span class="badge" id="mic-duration" hidden>00:00 / 01:00</span></div><p class="footnote" id="mic-message" aria-live="polite">最长录音 60 秒，保存后由本地模型转写。</p><p class="footnote" id="speech-health">正在检查本地语音模型…</p></section>
+        <section class="panel" aria-labelledby="sources-title"><div class="panel-head"><div><p class="panel-kicker">AWARENESS SOURCES</p><h2 class="panel-title" id="sources-title">感知来源</h2></div></div><div class="source-grid"><div class="source-card"><span class="source-dot" id="flow-dot"></span><div class="source-copy"><strong>电脑活动</strong><span id="flow-detail">等待采集端连接</span></div><span class="source-status" id="flow-status">未连接</span></div><div class="source-card"><span class="source-dot" id="vision-dot"></span><div class="source-copy"><strong>桌面视觉</strong><span id="vision-detail">电脑内置摄像头优先</span></div><span class="source-status" id="vision-status">未连接</span></div></div><label class="toggle-row"><span>接收电脑活动<small>只在你启动采集端后记录</small></span><input type="checkbox" id="flow-enabled" checked></label><p class="footnote">采集源断开后，自动使用仍可用的能力。</p></section>
+        <section class="panel camera-panel" aria-labelledby="camera-title"><div class="panel-head"><div><p class="panel-kicker">A GLANCE AT YOUR DESK</p><h2 class="panel-title" id="camera-title">桌面摄像头</h2></div><span class="badge" id="camera-badge">未开启</span></div><p class="muted">默认使用电脑摄像头。调整屏幕角度，让镜头看到桌面；请先检查画面，裁剪不会自动识别人脸。</p><label class="camera-field" for="camera-device">摄像头<select id="camera-device"><option value="">电脑默认摄像头</option></select></label><label class="camera-field" for="camera-crop">采样范围<select id="camera-crop"><option value="full">完整画面</option><option value="lower">画面下半部</option><option value="center">中央区域</option></select></label><p class="footnote" id="camera-device-name">授权后显示设备名称，可切换其他摄像头。</p><details id="camera-details"><summary>查看实时画面</summary><div class="camera-preview"><video id="camera-video" autoplay muted playsinline aria-label="桌面摄像头实时预览"></video><span id="camera-placeholder">摄像头尚未开启</span><span class="crop-guide" id="crop-guide" hidden></span></div></details><div class="camera-options"><label class="toggle-row"><span>仅本地识别<small id="privacy-detail">采样图像留在本机</small></span><input type="checkbox" id="local-only" checked></label></div><button class="button button-secondary" id="camera-toggle" type="button">开启摄像头</button><p class="footnote" id="vision-service-status">正在检查识别服务…</p><p class="camera-message" id="camera-message" aria-live="polite">每 20 秒采样一帧；连续 3 次一致才更新场景，约需 40–60 秒。图像不存档。</p></section>
+      </aside>
+    </main>
+    <footer class="app-footer"><span>FocusPendant · 为理解自己留一点空间</span><span>你可以修正每一条活动判断。</span></footer>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>

@@ -1,0 +1,4 @@
+dist/
+*.fuiapp
+!FocusPendant-1.0.0.fuiapp
+*.log

@@ -1,0 +1,2 @@
+-r requirements-vision.txt
+opencv-python>=4.10,<5

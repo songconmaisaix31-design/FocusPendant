@@ -1,0 +1,11 @@
+data/
+.env
+.env.*
+!.env.example
+.venv*/
+__pycache__/
+*.pyc
+node_modules/
+models/
+iris-app/dist/
+/IrisView-Developer-Kit*/
